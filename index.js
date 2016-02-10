@@ -23,7 +23,7 @@ cli
 
 	.command('server set')
 	.action(function(command) {
-		var options = {
+		var server = {
 			name: command.value('host-name'),
 			url: command.value('host-url'),
 			paths: {
@@ -36,6 +36,8 @@ cli
 				exclude: optionValue(command, 'e', 'filter')
 			}
 		};
+		
+		serverList.set(server);
 	})
 	
 	.command('server remove')
