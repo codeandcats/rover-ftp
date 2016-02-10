@@ -1,0 +1,31 @@
+{
+  "name": "rover-ftp",
+  "version": "0.0.0",
+  "description": "Rover FTP will fetch new files from an FTP Server for you!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codeandcats/rover-ftp.git"
+  },
+  "keywords": [
+    "ftp",
+    "download",
+    "fetch",
+    "rover"
+  ],
+  "author": "Ben <codeandcats@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/codeandcats/rover-ftp/issues"
+  },
+  "homepage": "https://github.com/codeandcats/rover-ftp#readme",
+  "dependencies": {
+    "ftp-client": "^0.2.2",
+    "jsonfile": "^2.2.3",
+    "kitten-cli": "^0.1.1",
+    "lodash": "^4.3.0"
+  }
+}
