@@ -71,6 +71,7 @@ module.exports.get = function(name) {
 
 module.exports.set = function(server) {
 	
+	server.name = (server.name || '').trim();
 	server.paths = server.paths || {};
 	server.filters = server.filters || {};
 	utils.removeUndefinedProperties(server);
@@ -80,40 +81,14 @@ module.exports.set = function(server) {
 			file = file || {};
 			file.servers = file.servers || [];
 			
-			var existing = _.find(file.servers, function(s) {
-				return (s.name || '').trim().toLowerCase() == server.name; 
-			});
+			var existing = _.find(file.servers, s => (s.name || '').toLowerCase() == server.name.toLowerCase());
 			
 			if (existing) {
-				existing.url = server.url;
-				existing.paths = existing.paths || {};
-				existing.filters = existing.filters || {};
-				
-				existing.paths.remote = server.paths.remote;
-				existing.paths.local = server.paths.local;
-				existing.paths.temp = server.paths.temp;
-				existing.filters.include = server.filters.include;
-				existing.filters.exclude = server.filters.exclude;
-				
-				utils.removeUndefinedProperties(existing);
+				utils.applyDefinedPropertyValues(server, existing);
 			}
 			else {
-				var newServer = {
-					name: server.name,
-					url: server.url,
-					paths: {
-						remote: server.paths.remote,
-						local: server.paths.local,
-						temp: server.paths.temp
-					},
-					filters: {
-						include: server.filters.include,
-						exclude: server.filters.exclude
-					}
-				};
-				
-				utils.removeUndefinedProperties(newServer);
-				
+				var newServer = {};
+				utils.applyDefinedPropertyValues(server, newServer);
 				file.servers.push(newServer);
 			}
 			
@@ -127,5 +102,20 @@ module.exports.set = function(server) {
 	
 }
 
-module.exports.remove = function() {
+module.exports.remove = function(name) {
+	name = name.trim().toLowerCase();
+	
+	return new Promise((resolve, reject) => {
+		getFile().then(function(file) {
+			file = file || {};
+			file.servers = file.servers || {};
+			
+			_.remove(file.servers, s => s.name.toLowerCase() == name);
+			
+			setFile(file)
+				.then(resolve)
+				.catch(reject);
+		});
+	});
 }
+

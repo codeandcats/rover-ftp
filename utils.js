@@ -10,3 +10,24 @@ module.exports.removeUndefinedProperties = function(obj) {
 		}
 	}
 }
+
+module.exports.applyDefinedPropertyValues = function(from, to) {
+	for (var name in from) {
+		var value = from[name];
+		
+		if (value === undefined) {
+			continue;
+		}
+		
+		if (typeof value == 'object') {
+			if (typeof to[name] != 'object') {
+				to[name] = {};
+			}
+			
+			module.exports.applyDefinedPropertyValues(value, to[name]);
+		}
+		else if (value != undefined) {
+			to[name] = value;
+		}
+	}
+};
