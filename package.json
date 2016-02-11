@@ -26,6 +26,8 @@
     "ftp-client": "^0.2.2",
     "jsonfile": "^2.2.3",
     "kitten-cli": "^0.1.1",
-    "lodash": "^4.3.0"
+    "lodash": "^4.3.0",
+    "promise-ftp": "^1.2.13",
+    "promise-ftp-common": "^1.1.5"
   }
 }
