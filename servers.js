@@ -17,6 +17,12 @@ function getFile() {
 						reject(err);
 					}
 					else {
+						obj.servers = obj.servers || [];
+						obj.servers.forEach(server => {
+							server.credentials = server.credentials || {};
+							server.paths = server.paths || {};
+							server.filters = server.filters || {}; 
+						});
 						resolve(obj);
 					}
 				});
@@ -72,6 +78,7 @@ module.exports.get = function(name) {
 module.exports.set = function(server) {
 	
 	server.name = (server.name || '').trim();
+	server.credentials = server.credentials || {};
 	server.paths = server.paths || {};
 	server.filters = server.filters || {};
 	utils.removeUndefinedProperties(server);

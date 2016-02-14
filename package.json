@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "rover-ftp": "./index.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/codeandcats/rover-ftp.git"
@@ -23,6 +26,7 @@
   },
   "homepage": "https://github.com/codeandcats/rover-ftp#readme",
   "dependencies": {
+    "commander": "^2.9.0",
     "ftp-client": "^0.2.2",
     "jsonfile": "^2.2.3",
     "kitten-cli": "^0.1.1",
