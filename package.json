@@ -26,11 +26,13 @@
   },
   "homepage": "https://github.com/codeandcats/rover-ftp#readme",
   "dependencies": {
+    "chalk": "^1.1.1",
     "commander": "^2.9.0",
+    "filesize": "^3.2.1",
     "ftp-client": "^0.2.2",
     "jsonfile": "^2.2.3",
-    "kitten-cli": "^0.1.1",
     "lodash": "^4.3.0",
+    "moment": "^2.11.2",
     "promise-ftp": "^1.2.13",
     "promise-ftp-common": "^1.1.5"
   }

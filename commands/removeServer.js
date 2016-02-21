@@ -1,4 +1,4 @@
-var common = require('./common');
+var consoleUtils = require('./consoleUtils');
 var cli = require('commander');
 var serverList = require('../servers');
 
@@ -8,7 +8,7 @@ cli
 		serverList.get(serverName).then(server =>
 		{
 			if (!server) {
-				common.showErrorAndExit('Server not found');
+				consoleUtils.showErrorAndExit('Server not found');
 			}
 			else {
 				serverList
@@ -19,6 +19,6 @@ cli
 					});
 			}
 		}).catch(err => {
-			common.showErrorAndExit('Error removing server: ' + err);
+			consoleUtils.showErrorAndExit('Error removing server: ' + err);
 		});
 	});

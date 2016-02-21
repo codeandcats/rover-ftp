@@ -1,4 +1,4 @@
-var common = require('./common');
+var consoleUtils = require('./consoleUtils');
 var cli = require('commander');
 var serverList = require('../servers');
 
@@ -40,5 +40,5 @@ cli
 				});
 			}
 			process.exit(0);
-		}).catch(common.showErrorAndExit);
+		}).catch(consoleUtils.showErrorAndExit);
 	});

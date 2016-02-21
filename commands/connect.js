@@ -1,4 +1,4 @@
-var common = require('./common');
+var consoleUtils = require('./consoleUtils');
 var cli = require('commander');
 var serverList = require('../servers');
 
