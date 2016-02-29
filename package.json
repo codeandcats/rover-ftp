@@ -28,6 +28,7 @@
   "dependencies": {
     "chalk": "^1.1.1",
     "commander": "^2.9.0",
+    "ejs": "^2.4.1",
     "filesize": "^3.2.1",
     "ftp-client": "^0.2.2",
     "jsonfile": "^2.2.3",

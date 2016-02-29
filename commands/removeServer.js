@@ -1,17 +1,16 @@
-var consoleUtils = require('./consoleUtils');
+var consoleUtils = require('../utils/console');
 var cli = require('commander');
-var serverList = require('../servers');
+var config = require('../config');
 
 cli
-	.command('remove <name>')
+	.command('remove-server <name>')
 	.action(function(serverName) {
-		serverList.get(serverName).then(server =>
-		{
+		config.servers.get(serverName).then(server => {
 			if (!server) {
 				consoleUtils.showErrorAndExit('Server not found');
 			}
 			else {
-				serverList
+				config.servers
 					.remove(serverName)
 					.then(() => {
 						console.log('Removed server: ' + serverName);

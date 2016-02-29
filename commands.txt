@@ -1,4 +1,0 @@
-server
-server set <host-name> <host-url> -u|--user-name <user-name> -p|--password <password> -r|--remote-path <path> -l|--local-path <path> -t|--temp-path <path> -i|--include <filter> -e|--exclude <filter>
-server remove <host-name>
-fetch <host-name>

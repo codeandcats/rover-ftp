@@ -20,6 +20,12 @@ module.exports.applyDefinedPropertyValues = function(from, to) {
 		}
 		
 		if (typeof value == 'object') {
+			if (value instanceof Date) {
+				to[name] = new Date();
+				to[name].setTime(value.getTime());
+				continue;
+			}
+			
 			if (typeof to[name] != 'object') {
 				to[name] = {};
 			}

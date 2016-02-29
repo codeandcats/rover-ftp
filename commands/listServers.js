@@ -1,12 +1,13 @@
-var consoleUtils = require('./consoleUtils');
+var consoleUtils = require('../utils/console');
 var cli = require('commander');
-var serverList = require('../servers');
+var config = require('../config');
 
 cli
-	.command('list')
+	.command('servers')
 	.option('-d, --details')
 	.action(options => {
-		serverList.list().then(servers => {
+		console.log('');
+		config.servers.list().then(servers => {
 			if (servers.length == 0) {
 				console.log('No servers defined');
 			}
