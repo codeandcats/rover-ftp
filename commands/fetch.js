@@ -11,6 +11,7 @@ var fileUtils = require('../utils/file');
 
 cli
 	.command('fetch [name]')
+	.description('Fetches latest files since the last file was fetched')
 	.action(function(serverName) {
 		if (serverName) {
 			config.servers.get(serverName).then(fetch);

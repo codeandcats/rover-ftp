@@ -4,6 +4,7 @@ var config = require('../config');
 
 cli
 	.command('remove-server <name>')
+	.description('Unregisters a server')
 	.action(function(serverName) {
 		config.servers.get(serverName).then(server => {
 			if (!server) {

@@ -4,6 +4,7 @@ var config = require('../config');
 
 cli
 	.command('servers')
+	.description('Lists registered servers')
 	.option('-d, --details')
 	.action(options => {
 		console.log('');

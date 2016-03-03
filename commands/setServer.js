@@ -4,6 +4,7 @@ var config = require('../config');
 
 cli
 	.command('set-server <name>')
+	.description('Registers a server to download from')
 	.option('-U, --url <url>', 'Url to FTP server')
 	.option('-u, --username <username>', 'Username to authenticate with')
 	.option('-p, --password <password>', 'Password to authenticate with')

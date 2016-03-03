@@ -5,6 +5,7 @@ var config = require('../config');
 
 cli
 	.command('test-mail')
+	.description('Sends a test email')
 	.action(function() {
 		config.mail.get().then(mailSettings => {
 			console.log('');

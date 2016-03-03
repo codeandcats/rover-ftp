@@ -5,6 +5,7 @@ var config = require('../config');
 
 cli
 	.command('set-mail')
+	.description('Configures email notifications')
 	.option('-u, --username <username>', 'Username to authenticate with')
 	.option('-p, --password <password>', 'Password to authenticate with')
 	.option('-f, --from <from>', 'From Name and Address')

@@ -11,6 +11,7 @@ function showSetting(name, value) {
 
 cli
 	.command('mail')
+	.description('Displays mail settings')
 	.action(() => {
 		config.mail.get().then(mailSettings => {
 			console.log('');
