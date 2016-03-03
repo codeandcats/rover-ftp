@@ -1,0 +1,9 @@
+<h4>
+	<%= files.length %> new files downloaded
+</h4>
+
+<ul>
+<% files.forEach(function(file) { %>
+	<li><%= file.fileName %></li>
+<% }); %>
+</ul>

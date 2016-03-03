@@ -1,63 +1,321 @@
-var common = require('./common');
+var consoleUtils = require('../utils/console');
 var cli = require('commander');
-var serverList = require('../servers');
+var config = require('../config');
 var PromiseFtp = require('promise-ftp');
+var chalk = require('chalk');
+var moment = require('moment');
+var filesize = require('filesize');
+var fs = require('fs');
+var path = require('path');
+var fileUtils = require('../utils/file');
 
 cli
-	.command('fetch <name>')
+	.command('fetch [name]')
+	.description('Fetches latest files since the last file was fetched')
 	.action(function(serverName) {
-		
-		serverList.get(serverName).then(server =>
-		{
-			if (!server) {
-				common.showErrorAndExit('Server not found');
-			}
-			else {
+		if (serverName) {
+			config.servers.get(serverName).then(fetch);
+		}
+		else {
+			config.servers.list().then(servers => {
+				function processFetchQueue() {
+					if (!servers.length) {
+						console.log('');
+						console.log('Finished');
+						return process.exit(0);
+					}
+					
+					var server = servers.shift();
+					
+					fetch(server).then(processFetchQueue, consoleUtils.showErrorAndExit);
+				}
 				
-				var ftp = new PromiseFtp();
-				
-				var options = {
-					host: server.url,
-					user: server.userName,
-					password: server.password
-				};
-				
-				var path = server.paths.remote || '';
-				
-				console.log('Connecting to ' + server.name + '...');
-				
-				ftp
-					.connect(options)
-					.catch(err => console.error(err))
-					.then(function (serverMessage) {
-						console.log('Connected');
-						console.log('Server message: ' + serverMessage);
-						
-						return listNewFiles(ftp, path);
-					}).then(function (list) {
-						console.log('Directory listing:');
-						console.dir(list);
-						return ftp.end();
-					});
-				
-			}
-		}).catch(err => {
-			console.err("Error: ", err);
-			process.exit(1);
-		});
-		
+				processFetchQueue();
+			},
+			consoleUtils.showErrorAndExit);
+		}
 	});
-
-function listNewFiles(path) {
 	
+function fetch(server) {
 	return new Promise((resolve, reject) => {
+		var ftp = new PromiseFtp();
 		
-		ftp.list('/' + path).then(listing => {
-			
-			
-			
-		});
+		var options = {
+			host: server.url,
+			user: server.credentials.userName,
+			password: server.credentials.password
+		};
 		
+		var lastFileDate = server.lastFileDate || new Date(1981, 4, 14);
+		
+		var remotePath = server.paths.remote || '/';
+		var localPath = server.paths.local || '';
+		
+		console.log('');
+		process.stdout.write('Connecting to ' + server.name + '...');
+		
+		function getLocalFileName(entry) {
+			return localPath + entry.path.substr(remotePath.length) + path.sep + entry.name;
+		}
+		
+		function finished(summary) {
+			ftp.end().then(() => {
+				// Update the server with the last file date and we're done baby
+				server.lastFileDate = summary.lastFileDate;
+				config.servers.set(server).then(() => resolve(), reject);
+			},
+			() => resolve);
+		}
+		
+		function disconnectAndReject() {
+			ftp.end(() => reject());
+		}
+		
+		ftp
+			.connect(options)
+			.then(showConnectedMessage, reject)
+			.then(() => getNewFiles(ftp, remotePath, lastFileDate), disconnectAndReject)
+			.then(files => {
+				return listFiles(files);
+			}, disconnectAndReject)
+			.then(listing => downloadFiles(ftp, listing, getLocalFileName), disconnectAndReject)
+			.then(finished, disconnectAndReject);
 	});
-	
+}
+
+function showConnectedMessage(serverMessage) {
+	return new Promise((resolve, reject) =>
+	{
+		console.log(chalk.green('Connected'));
+		console.log('');
+		console.log('  ', serverMessage);
+		console.log('');
+		
+		resolve();
+	});
+}
+
+function getNewFiles(ftp, remotePath, afterDate) {
+	return new Promise((resolve, reject) => {
+		console.log(`Searching for files newer than ${formatDate(afterDate)}...`)
+		console.log('');
+		
+		function isNew(entry) {
+			return entry.date.getTime() > afterDate.getTime();
+		}
+		
+		var queue = [];
+		var files = [];
+		
+		queue.push(remotePath);
+		
+		processQueue();
+		
+		function processQueue() {
+			if (queue.length == 0) {
+				resolve(files);
+				return;
+			}
+			
+			var currentPath = queue.shift();
+			
+			ftp
+				.list(currentPath).then(entries => {
+					entries.forEach(entry => {
+						try {
+							if (isNew(entry)) {
+								if (entry.type.toLowerCase() == 'd') {
+									queue.push(currentPath + '/' + entry.name);
+								}
+								else {
+									entry.path = currentPath;
+									files.push(entry);
+								}
+							}
+						}
+						catch (err) {
+							console.error(err);
+							reject(err);
+						}
+					});
+					processQueue();
+				},
+				err => {
+					reject(err);
+				});
+		}
+	});
+}
+
+function formatDate(date) {
+	return moment(date).format('YYYY-MM-DD HH:mm:ss');
+}
+
+function listFiles(list) {
+	return new Promise((resolve, reject) => {
+		var summary = {
+			totalCount: 0,
+			totalSize: 0,
+			files: list
+		};
+		
+		if (list) {
+			summary.totalCount = list.length;
+			
+			list.forEach(entry => {
+				summary.totalSize += entry.size;
+				//console.log(`${formatDate(entry.date)} ${chalk.white(entry.path + '/' + entry.name)}`);
+			});
+			
+			console.log(
+				'Found ' + chalk.yellow(summary.totalCount) + 
+				' new files totaling ' + chalk.yellow(filesize(summary.totalSize)));
+			console.log('');
+		}
+		
+		resolve(summary);
+	});
+}
+
+function downloadFiles(ftp, listing, getLocalFileName) {
+	return new Promise((resolve, reject) => {
+		var todo = [].concat(listing.files);
+		
+		var summary = {
+			downloaded: 0
+		};
+		
+		function downloadFile(remoteFileName, localFileName, fileDate, append) {
+			return new Promise((resolveDownload, rejectDownload) => {
+				// First ensure the directory the file resides in exists
+				// before we try creating the file
+				var parentPath = path.dirname(localFileName);
+				
+				fileUtils.makeDirectory(parentPath).then(() => {
+					if (append) {
+						console.log('Resuming: ' + remoteFileName);
+						console.log('      To: ' + localFileName);
+						//console.log('    Date: ' + fileDate);
+					}
+					else {
+						console.log('Downloading: ' + remoteFileName);
+						console.log('         To: ' + localFileName);
+						//console.log('       Date: ' + fileDate);
+					}
+					
+					ftp
+						.binary()
+						.then(() => {
+							ftp
+								.get(remoteFileName)
+								.then(remoteStream => {
+									var options = { flags: append ? 'a' : 'w' };
+									
+									var localStream = fs.createWriteStream(localFileName, options);
+									
+									remoteStream.once('close', () => {
+										summary.downloaded++;
+										
+										if (!summary.lastFileDate || 
+											summary.lastFileDate.getTime() < fileDate.getTime()) {
+											summary.lastFileDate = fileDate;
+										}
+										
+										if (append) {
+											console.log('          Done');
+										}
+										else {
+											console.log('             Done');
+										}
+										
+										console.log('');
+										resolveDownload();
+									});
+									
+									remoteStream.once('error', err => {
+										rejectDownload(err);
+									});
+									
+									remoteStream.pipe(localStream);
+								},
+								rejectDownload);
+						},
+						rejectDownload);
+				},
+				rejectDownload);
+			});
+		}
+		
+		function processQueue() {
+			if (todo.length == 0) {
+				return resolve(summary);
+			}
+			
+			var file = todo.shift();
+			
+			var remoteFileName = file.path + '/' + file.name;
+			var localFileName = getLocalFileName(file);
+			var fileDate = file.date;
+			
+			fs.stat(localFileName, (err, stat) => {
+				if (err != null) {
+					// The local file doesn't exist
+					// so let's download it
+					downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+				}
+				else if (stat.isFile()) {
+					if (stat.size == file.size) {
+						// The local file is same size, which means 
+						// we've already downloaded it, so let's skip it
+						console.log('Already downloaded: ' + remoteFileName);
+						processQueue();
+					}
+					else if (stat.size > file.size) {
+						// The local file is larger than the remote file
+						// Wierd...let's just delete the local file and
+						// redownload the remote file
+						console.log("Local file larger than remote - redownloading: " + localFileName);
+						fs.unlink(localFileName, err => {
+							if (err) {
+								reject(err);
+							}
+							else {
+								downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+							}
+						});
+					}
+					else if (stat.size > 0) {
+						// The local file exists but is smaller than remote
+						// That means we haven't finished downloading it, so 
+						// let's try to resume downloading
+						ftp
+							.restart(stat.size)
+							.then(() => {
+								downloadFile(remoteFileName, localFileName, fileDate, true).then(processQueue, reject);
+							},
+							() => {
+								// Damn, the command to resume from an offset failed
+								// Most likely the ftp server doesn't support this 
+								// extended feature of the protocol. Our best course
+								// of action will be to delete our local file and
+								// restart the download from scratch
+								fs.unlink(localFileName, err => {
+									if (err) {
+										reject(err);
+									}
+									else {
+										downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+									}
+								});
+							});
+					}
+					else {
+						downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+					}
+				}
+			});
+		}
+		
+		processQueue();
+	});
 }

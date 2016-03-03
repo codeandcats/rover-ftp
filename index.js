@@ -1,10 +1,8 @@
 #!/usr/bin/env node
+
 var cli = require('commander');
 var pkg = require('./package.json');
-require('./commands/all')
-
-console.log('');
-console.log('Rover FTP v' + pkg.version);
+require('./commands/all');
 
 cli
 	.version(pkg.version)

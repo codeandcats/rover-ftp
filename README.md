@@ -9,8 +9,16 @@ Rover FTP will fetch new files from an FTP Server for you!
 
 ## Add a server
 
-`rover-ftp server set <host-name> <host-url> -u <user-name> -p <password> -r <remote-path> -l <local-path> -t <temp-path>`
+`rover-ftp set-server <name> --url <url> --username <username> --password <password> --remote <path> --local <path>`
+
+e.g.
+
+`rover-ftp set-server MyFtp --url myftpserver.net --username rsanchez --password "WubbaLubbaDubDub" --remote "downloads/completed" --local "c:\downloads"`
 
 ## Fetch downloads
 
-`rover-ftp fetch [<host-name>]`
+`rover-ftp fetch [name]`
+
+e.g.
+
+`rover-ftp fetch MyFtp`

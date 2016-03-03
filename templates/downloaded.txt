@@ -1,0 +1,5 @@
+<%= files.length %> new files downloaded
+	
+<% files.forEach(function(file) { %>
+ - <%= file.fileName %>
+<% }); %>

@@ -1,17 +1,17 @@
-var common = require('./common');
+var consoleUtils = require('../utils/console');
 var cli = require('commander');
-var serverList = require('../servers');
+var config = require('../config');
 
 cli
-	.command('remove <name>')
+	.command('remove-server <name>')
+	.description('Unregisters a server')
 	.action(function(serverName) {
-		serverList.get(serverName).then(server =>
-		{
+		config.servers.get(serverName).then(server => {
 			if (!server) {
-				common.showErrorAndExit('Server not found');
+				consoleUtils.showErrorAndExit('Server not found');
 			}
 			else {
-				serverList
+				config.servers
 					.remove(serverName)
 					.then(() => {
 						console.log('Removed server: ' + serverName);
@@ -19,6 +19,6 @@ cli
 					});
 			}
 		}).catch(err => {
-			common.showErrorAndExit('Error removing server: ' + err);
+			consoleUtils.showErrorAndExit('Error removing server: ' + err);
 		});
 	});
