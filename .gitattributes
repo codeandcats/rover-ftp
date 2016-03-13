@@ -1,0 +1,9 @@
+# Use LF for line-endings because multi-platform
+* text=auto
+
+*.js text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.config text eol=lf
+*.txt text eol=lf
+*.md text eol=lf
