@@ -7,23 +7,26 @@ cli
 	.command('test-mail')
 	.description('Sends a test email')
 	.action(function() {
-		config.mail.get().then(mailSettings => {
-			console.log('');
+		config.mail.get()
+			.then(mailSettings => {
+				console.log('');
+					
+				if (!mailSettings.userName && !mailSettings.password) {
+					console.log('Mail has not been configured. See the set-mail command.');
+					return;
+				}
 				
-			if (!mailSettings.userName && !mailSettings.password) {
-				console.log('Mail has not been configured. See the set-mail command.');
-				return;
-			}
-			
-			var files = [
-				{ fileName: 'totally-legal-file.mkv' },
-				{ fileName: 'linux-distro.iso' }
-			];
-			
-			mailer.sendDownloadedNotification(files).then(() => {
-				console.log('Email sent');
-				process.exit(0);
-			},
-			consoleUtils.showErrorAndExit);
-		});
+				var files = [
+					{ fileName: 'totally-legal-file.mkv' },
+					{ fileName: 'linux-distro.iso' }
+				];
+				
+				mailer.sendDownloadedNotification(files)
+					.then(() => {
+						console.log('Email sent');
+						process.exit(0);
+					},
+					consoleUtils.showErrorAndExit);
+			})
+			.catch(consoleUtils.showErrorAndExit);
 	});

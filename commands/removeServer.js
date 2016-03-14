@@ -8,7 +8,7 @@ cli
 	.action(function(serverName) {
 		config.servers.get(serverName).then(server => {
 			if (!server) {
-				consoleUtils.showErrorAndExit('Server not found');
+				consoleUtils.showErrorAndExit(new Error('Server not found'));
 			}
 			else {
 				config.servers
@@ -16,9 +16,8 @@ cli
 					.then(() => {
 						console.log('Removed server: ' + serverName);
 						process.exit(0);
-					});
+					})
+					.catch(consoleUtils.showErrorAndExit);
 			}
-		}).catch(err => {
-			consoleUtils.showErrorAndExit('Error removing server: ' + err);
-		});
+		}).catch(consoleUtils.showErrorAndExit);
 	});

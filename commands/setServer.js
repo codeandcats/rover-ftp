@@ -33,8 +33,7 @@ cli
 			}
 		};
 		
-		config.servers
-			.set(server)
+		config.servers.set(server)
 			.then(() => {
 				console.log('Updated Server "' + server.name + '"');
 				process.exit(0);

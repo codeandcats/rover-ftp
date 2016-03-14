@@ -28,8 +28,8 @@ function makeDirectory(directoryPath) {
 			fs.stat(parentPath, (err, stats) => {
 				if (err || stats.isFile()) {
 					makeDirectory(parentPath)
-						.catch(reject)
-						.then(makeThisDirectory);
+						.then(makeThisDirectory)
+						.catch(reject);
 				}
 				else {
 					makeThisDirectory();

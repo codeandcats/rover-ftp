@@ -36,7 +36,6 @@
     "moment": "^2.11.2",
     "nodemailer": "^2.3.0",
     "promise-ftp": "^1.2.13",
-    "promise-ftp-common": "^1.1.5",
-    "ps-nodejs": "0.0.7"
+    "promise-ftp-common": "^1.1.5"
   }
 }

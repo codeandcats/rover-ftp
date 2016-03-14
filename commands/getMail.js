@@ -35,7 +35,7 @@ cli
 			}
 			
 			process.exit(0);
-		},
-		consoleUtils.showErrorAndExit);
+		})
+		.catch(consoleUtils.showErrorAndExit);
 	});
 
