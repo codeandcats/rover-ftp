@@ -54,19 +54,18 @@ function getFile() {
 
 function setFile(obj) {
 	return new Promise((resolve, reject) => {
-		fileUtils.makeDirectory(path.dirname(fileName())).then(() => {
-			
-			jsonFile.writeFile(fileName(), obj, { spaces: 4 }, err => {
-				if (err) {
-					reject(err);
-				}
-				else {
-					resolve(obj);
-				}
-			});
-			
-		},
-		reject);
+		fileUtils.makeDirectory(path.dirname(fileName()))
+			.then(() => {
+				jsonFile.writeFile(fileName(), obj, { spaces: 4 }, err => {
+					if (err) {
+						reject(err);
+					}
+					else {
+						resolve(obj);
+					}
+				});
+			})
+			.catch(reject);
 	});
 }
 
@@ -74,24 +73,22 @@ module.exports.servers = {};
 
 module.exports.servers.list = () => {
 	return new Promise((resolve, reject) => {
-		getFile().then(file => {
-			resolve((file && file.servers) || []);
-		},
-		reject);
+		getFile()
+			.then(file => resolve((file && file.servers) || []))
+			.catch(reject);
 	});
 }
 
 module.exports.servers.get = name => {
-	name = (name || '').trim().toLowerCase();
-	
 	return new Promise((resolve, reject) => {
-		module.exports.list()
+		name = (name || '').trim().toLowerCase();
+		
+		module.exports.servers.list()
 			.then(servers => {
 				var server = _.find(servers, s => (s.name || '').trim().toLowerCase() == name);
-				
 				resolve(server);
-			},
-			reject);
+			})
+			.catch(reject);
 	});
 }
 
@@ -103,34 +100,38 @@ module.exports.servers.set = server => {
 	objectUtils.removeUndefinedProperties(server);
 	
 	return new Promise((resolve, reject) => {
-		getFile().then(file => {
-			var existing = _.find(file.servers, s => (s.name || '').toLowerCase() == server.name.toLowerCase());
-			
-			if (existing) {
-				objectUtils.applyDefinedPropertyValues(server, existing);
-			}
-			else {
-				var newServer = {};
-				objectUtils.applyDefinedPropertyValues(server, newServer);
-				file.servers.push(newServer);
-			}
-			
-			setFile(file).then(resolve, reject);
-		});
+		getFile()
+			.then(file => {
+				var existing = _.find(file.servers, s => (s.name || '').toLowerCase() == server.name.toLowerCase());
+				
+				if (existing) {
+					objectUtils.applyDefinedPropertyValues(server, existing);
+				}
+				else {
+					var newServer = {};
+					objectUtils.applyDefinedPropertyValues(server, newServer);
+					file.servers.push(newServer);
+				}
+				
+				setFile(file).then(resolve, reject);
+			})
+			.catch(reject);
 	});
 }
 
 module.exports.servers.remove = name => {
-	name = name.trim().toLowerCase();
-	
 	return new Promise((resolve, reject) => {
-		getFile().then(file => {
-			_.remove(file.servers, s => s.name.toLowerCase() == name);
-			
-			setFile(file)
-				.then(resolve)
-				.catch(reject);
-		});
+		name = name.trim().toLowerCase();
+		
+		getFile()
+			.then(file => {
+				_.remove(file.servers, s => s.name.toLowerCase() == name);
+				
+				setFile(file)
+					.then(resolve)
+					.catch(reject);
+			})
+			.catch(reject);
 	});
 }
 
@@ -150,16 +151,47 @@ module.exports.mail.set = mailSettings => {
 		mailSettings = mailSettings || {};
 		objectUtils.removeUndefinedProperties(mailSettings);
 		
-		getFile().then(file => {
-			file.mail = file.mail || {};
-			file.mail.userName = mailSettings.userName;
-			file.mail.password = mailSettings.password;
-			file.mail.from = mailSettings.from;
-			file.mail.to = mailSettings.to;
-			file.mail.subject = mailSettings.subject;
-			
-			setFile(file).then(file => resolve(file), reject);
-		},
-		reject);
+		getFile()
+			.then(file => {
+				file.mail = file.mail || {};
+				file.mail.userName = mailSettings.userName;
+				file.mail.password = mailSettings.password;
+				file.mail.from = mailSettings.from;
+				file.mail.to = mailSettings.to;
+				file.mail.subject = mailSettings.subject;
+				
+				setFile(file).then(resolve, reject);
+			})
+			.catch(reject);
 	});
 }
+
+module.exports.process = {};
+
+module.exports.process.checkRunning = () => {
+	return new Promise((resolve, reject) => {
+		getFile()
+			.then(file => {
+				file.process = file.process || {};
+				resolve(!!file.process.startTime);
+			})
+			.catch(reject);
+	});
+};
+
+function updateStartTime(time) {
+	return new Promise((resolve, reject) => {
+		getFile()
+			.then(file => {
+				file.process = file.process || {};
+				file.process.startTime = time;
+				
+				setFile(file).then(resolve, reject);
+			})
+			.catch(reject);
+	});
+}
+
+module.exports.process.started = () => updateStartTime(new Date());
+
+module.exports.process.stopped = () => updateStartTime(null);

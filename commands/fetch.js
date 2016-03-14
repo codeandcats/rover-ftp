@@ -13,29 +13,50 @@ cli
 	.command('fetch [name]')
 	.description('Fetches latest files since the last file was fetched')
 	.action(function(serverName) {
-		if (serverName) {
-			config.servers.get(serverName).then(fetch);
-		}
-		else {
-			config.servers.list().then(servers => {
-				function processFetchQueue() {
-					if (!servers.length) {
-						console.log('');
-						console.log('Finished');
-						return process.exit(0);
-					}
-					
-					var server = servers.shift();
-					
-					fetch(server).then(processFetchQueue, consoleUtils.showErrorAndExit);
+		config.process.started()
+			.then(() => {
+				if (serverName) {
+					config.servers.get(serverName)
+						.then(fetch)
+						.then(() => exit())
+						.catch(exit);
 				}
-				
-				processFetchQueue();
-			},
-			consoleUtils.showErrorAndExit);
-		}
+				else {
+					config.servers.list()
+						.then(servers => {
+							function processFetchQueue() {
+								if (!servers.length) {
+									console.log('');
+									console.log('Finished');
+									exit();
+									return;
+								}
+								
+								var server = servers.shift();
+								
+								fetch(server).then(processFetchQueue, exit);
+							}
+							
+							processFetchQueue();
+						})
+						.catch(exit);
+				}
+			})
+			.catch(exit);
 	});
-	
+
+function exit(err) {
+	config.process.stopped()
+		.then(() => {
+			if (err) {
+				consoleUtils.showErrorAndExit(err);
+			}
+			else {
+				process.exit(0);
+			}
+		});
+}
+
 function fetch(server) {
 	return new Promise((resolve, reject) => {
 		var ftp = new PromiseFtp();
@@ -59,33 +80,37 @@ function fetch(server) {
 		}
 		
 		function finished(summary) {
-			ftp.end().then(() => {
-				// Update the server with the last file date and we're done baby
-				server.lastFileDate = summary.lastFileDate;
-				config.servers.set(server).then(() => resolve(), reject);
-			},
-			() => resolve);
+			ftp.end()
+				.then(() => {
+					// Update the server with the last file date
+					server.lastFileDate = summary.lastFileDate;
+					config.servers.set(server)
+						.then(() => resolve())
+						.catch(reject);
+				})
+				.catch(() => resolve());
 		}
 		
-		function disconnectAndReject() {
-			ftp.end(() => reject());
+		function disconnectAndReject(err) {
+			ftp.end()
+				.then(() => reject(err))
+				.catch(() => reject(err));
 		}
 		
 		ftp
 			.connect(options)
-			.then(showConnectedMessage, reject)
-			.then(() => getNewFiles(ftp, remotePath, lastFileDate), disconnectAndReject)
-			.then(files => {
-				return listFiles(files);
-			}, disconnectAndReject)
-			.then(listing => downloadFiles(ftp, listing, getLocalFileName), disconnectAndReject)
-			.then(finished, disconnectAndReject);
+			.then(showConnectedMessage)
+			.catch(reject)
+			.then(() => getNewFiles(ftp, remotePath, lastFileDate))
+			.then(listFiles)
+			.then(listing => downloadFiles(ftp, listing, getLocalFileName))
+			.then(finished)
+			.catch(disconnectAndReject);
 	});
 }
 
 function showConnectedMessage(serverMessage) {
-	return new Promise((resolve, reject) =>
-	{
+	return new Promise((resolve, reject) => {
 		console.log(chalk.green('Connected'));
 		console.log('');
 		console.log('  ', serverMessage);
@@ -119,8 +144,8 @@ function getNewFiles(ftp, remotePath, afterDate) {
 			
 			var currentPath = queue.shift();
 			
-			ftp
-				.list(currentPath).then(entries => {
+			ftp.list(currentPath)
+				.then(entries => {
 					entries.forEach(entry => {
 						try {
 							if (isNew(entry)) {
@@ -139,10 +164,8 @@ function getNewFiles(ftp, remotePath, afterDate) {
 						}
 					});
 					processQueue();
-				},
-				err => {
-					reject(err);
-				});
+				})
+				.catch(reject);
 		}
 	});
 }
@@ -191,58 +214,58 @@ function downloadFiles(ftp, listing, getLocalFileName) {
 				// before we try creating the file
 				var parentPath = path.dirname(localFileName);
 				
-				fileUtils.makeDirectory(parentPath).then(() => {
-					if (append) {
-						console.log('Resuming: ' + remoteFileName);
-						console.log('      To: ' + localFileName);
-						//console.log('    Date: ' + fileDate);
-					}
-					else {
-						console.log('Downloading: ' + remoteFileName);
-						console.log('         To: ' + localFileName);
-						//console.log('       Date: ' + fileDate);
-					}
-					
-					ftp
-						.binary()
-						.then(() => {
-							ftp
-								.get(remoteFileName)
-								.then(remoteStream => {
-									var options = { flags: append ? 'a' : 'w' };
-									
-									var localStream = fs.createWriteStream(localFileName, options);
-									
-									remoteStream.once('close', () => {
-										summary.downloaded++;
+				fileUtils.makeDirectory(parentPath)
+					.then(() => {
+						if (append) {
+							console.log('Resuming: ' + remoteFileName);
+							console.log('      To: ' + localFileName);
+							//console.log('    Date: ' + fileDate);
+						}
+						else {
+							console.log('Downloading: ' + remoteFileName);
+							console.log('         To: ' + localFileName);
+							//console.log('       Date: ' + fileDate);
+						}
+						
+						ftp
+							.binary()
+							.then(() => {
+								ftp.get(remoteFileName)
+									.then(remoteStream => {
+										var options = { flags: append ? 'a' : 'w' };
 										
-										if (!summary.lastFileDate || 
-											summary.lastFileDate.getTime() < fileDate.getTime()) {
-											summary.lastFileDate = fileDate;
-										}
+										var localStream = fs.createWriteStream(localFileName, options);
 										
-										if (append) {
-											console.log('          Done');
-										}
-										else {
-											console.log('             Done');
-										}
+										remoteStream.once('close', () => {
+											summary.downloaded++;
+											
+											if (!summary.lastFileDate || 
+												summary.lastFileDate.getTime() < fileDate.getTime()) {
+												summary.lastFileDate = fileDate;
+											}
+											
+											if (append) {
+												console.log('          Done');
+											}
+											else {
+												console.log('             Done');
+											}
+											
+											console.log('');
+											resolveDownload();
+										});
 										
-										console.log('');
-										resolveDownload();
-									});
-									
-									remoteStream.once('error', err => {
-										rejectDownload(err);
-									});
-									
-									remoteStream.pipe(localStream);
-								},
-								rejectDownload);
-						},
-						rejectDownload);
-				},
-				rejectDownload);
+										remoteStream.once('error', err => {
+											rejectDownload(err);
+										});
+										
+										remoteStream.pipe(localStream);
+									})
+									.catch(rejectDownload);
+							})
+							.catch(rejectDownload);
+					})
+					.catch(rejectDownload);
 			});
 		}
 		
@@ -261,7 +284,9 @@ function downloadFiles(ftp, listing, getLocalFileName) {
 				if (err != null) {
 					// The local file doesn't exist
 					// so let's download it
-					downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+					downloadFile(remoteFileName, localFileName, fileDate)
+						.then(processQueue)
+						.catch(reject);
 				}
 				else if (stat.isFile()) {
 					if (stat.size == file.size) {
@@ -280,7 +305,9 @@ function downloadFiles(ftp, listing, getLocalFileName) {
 								reject(err);
 							}
 							else {
-								downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+								downloadFile(remoteFileName, localFileName, fileDate)
+									.then(processQueue)
+									.catch(reject);
 							}
 						});
 					}
@@ -291,7 +318,9 @@ function downloadFiles(ftp, listing, getLocalFileName) {
 						ftp
 							.restart(stat.size)
 							.then(() => {
-								downloadFile(remoteFileName, localFileName, fileDate, true).then(processQueue, reject);
+								downloadFile(remoteFileName, localFileName, fileDate, true)
+									.then(processQueue)
+									.catch(reject);
 							},
 							() => {
 								// Damn, the command to resume from an offset failed
@@ -304,13 +333,17 @@ function downloadFiles(ftp, listing, getLocalFileName) {
 										reject(err);
 									}
 									else {
-										downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+										downloadFile(remoteFileName, localFileName, fileDate)
+											.then(processQueue)
+											.catch(reject);
 									}
 								});
 							});
 					}
 					else {
-						downloadFile(remoteFileName, localFileName, fileDate).then(processQueue, reject);
+						downloadFile(remoteFileName, localFileName, fileDate)
+							.then(processQueue)
+							.catch(reject);
 					}
 				}
 			});
