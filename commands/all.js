@@ -5,4 +5,3 @@ require('./setServer');
 require('./getMail');
 require('./setMail');
 require('./testMail');
-require('./processTest');
