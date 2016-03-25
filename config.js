@@ -100,6 +100,10 @@ module.exports.servers.set = server => {
 	objectUtils.removeUndefinedProperties(server);
 	
 	return new Promise((resolve, reject) => {
+		if (!server.name) {
+			return reject('Server name is required');
+		}
+		
 		getFile()
 			.then(file => {
 				var existing = _.find(file.servers, s => (s.name || '').toLowerCase() == server.name.toLowerCase());

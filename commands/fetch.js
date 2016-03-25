@@ -67,6 +67,18 @@ function fetch(server) {
 			password: server.credentials.password
 		};
 		
+		if (server.secure != undefined) {
+			options.secure = server.secure;
+		}
+		
+		if (server.timeout != undefined) {
+			var timeout = ((+server.timeout) || 0) * 1000;
+			if (timeout > 0) {
+				options.connTimeout = timeout;
+				options.pasvTimeout = timeout;
+			}   
+		}
+		
 		var lastFileDate = server.lastFileDate || new Date(1981, 4, 14);
 		
 		var remotePath = server.paths.remote || '/';

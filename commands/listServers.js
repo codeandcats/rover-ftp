@@ -31,6 +31,8 @@ cli
 						showField('Url', server.url);
 						showField('Username', server.credentials.userName);
 						showField('Password', server.credentials.password);
+						showField('Secure', server.secure);
+						showField('Timeout', server.timeout);
 						showField('Remote Path', server.paths.remote);
 						showField('Local Path', server.paths.local);
 						showField('Temp Path', server.paths.temp);

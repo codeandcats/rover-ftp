@@ -11,6 +11,13 @@ cli
 	.option('-r, --remote <path>', 'Remote path on server')
 	.option('-l, --local <path>', 'Local path to download to')
 	.option('-t, --temp <path>', 'Local temporary folder')
+	.option('--secure <value>',
+		'"true" for control and data connection encryption, ' +
+		'"control" for control connection encryption only, ' +
+		'"implicit" for implicitly encrypted control connection (this mode is deprecated in modern times, but usually uses port 990), ' +
+		'or "false" for no encryption.',
+		/^(true|control|implicit|false)$/i)
+	.option('--timeout <seconds>', 'Connection timeout')
 	//.option('-i, --include <filters>', 'Only download files matching filter')
 	//.option('-e, --exclude <filters>', 'Dont download files matching filter')
 	.action(function(name, options) {
@@ -18,6 +25,8 @@ cli
 		var server = {
 			name: name,
 			url: options.url,
+			secure: options.secure,
+			timeout: options.timeout,
 			credentials: {
 				userName: options.username,
 				password: options.password
