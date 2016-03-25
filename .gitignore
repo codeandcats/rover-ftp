@@ -34,3 +34,6 @@ node_modules
 
 # Runtime config file
 servers.json
+
+# Launch file
+launch.json
