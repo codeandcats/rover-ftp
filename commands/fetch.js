@@ -104,14 +104,20 @@ function fetch(server) {
 		}
 		
 		function disconnectAndReject(err) {
-			ftp.end()
-				.then(() => reject(err))
-				.catch(() => reject(err));
+			if (ftp.getConnectionStatus() == PromiseFtp.STATUSES.CONNECTED) {
+				ftp.end()
+					.then(() => reject(err))
+					.catch(() => reject(err));
+			}
+			else {
+				console.log(chalk.red('NOPE'));
+				console.log('');
+				reject(err);
+			}
 		}
 		
 		ftp
 			.connect(options)
-			.catch(reject)
 			.then(showConnectedMessage)
 			.then(() => getNewFiles(ftp, remotePath, lastFileDate))
 			.then(listFiles)
