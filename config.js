@@ -97,6 +97,17 @@ module.exports.servers.set = server => {
 	server.credentials = server.credentials || {};
 	server.paths = server.paths || {};
 	server.filters = server.filters || {};
+	switch ((server.secure || '').toLowerCase()) {
+		case 'true':
+			server.secure = true;
+			break;
+		case 'false':
+			server.secure = false;
+			break;
+		case '':
+			server.secure = undefined;
+			break;
+	}
 	objectUtils.removeUndefinedProperties(server);
 	
 	return new Promise((resolve, reject) => {
