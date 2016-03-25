@@ -99,8 +99,8 @@ function fetch(server) {
 		
 		ftp
 			.connect(options)
-			.then(showConnectedMessage)
 			.catch(reject)
+			.then(showConnectedMessage)
 			.then(() => getNewFiles(ftp, remotePath, lastFileDate))
 			.then(listFiles)
 			.then(listing => downloadFiles(ftp, listing, getLocalFileName))
