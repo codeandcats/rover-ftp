@@ -18,6 +18,7 @@ cli
 					
 					if (!options.details) {
 						console.log('  ' + server.name + ' : ' + server.url);
+						console.log('');
 					}
 					else {
 						var showField = (display, value) => {
